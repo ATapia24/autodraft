@@ -64,13 +64,13 @@ void *task(void *arg){
         		
 					for(int cr=0; cr<data.cr.size(); cr++)
 					{
-						//for(int gd=0; gd<data.gd.size(); gd++)
-						//{
+						for(int gd=0; gd<data.gd.size(); gd++)
+						{
 						//	for(int fd=0; fd<data.fd.size(); fd++)
 						//	{
 						//		
 						//	}
-						//}
+						}
 					}
 				}
 			}
