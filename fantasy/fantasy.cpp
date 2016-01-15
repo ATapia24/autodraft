@@ -49,7 +49,7 @@ void sortFPPD(vector<Player>&, char);
 void sortSalary(vector<Player>&, char);
 void loadTaskData(taskData&, vector<Player>);
 
-int const N_THREADS = 6;
+int const N_THREADS = 1;
 void *task(void *arg){
         
 	taskData data = *(taskData*)arg;
@@ -66,13 +66,13 @@ void *task(void *arg){
         		
 					for(int cr=0; cr<data.cr.size(); cr++)
 					{
-						//for(int gd=0; gd<data.gd.size(); gd++)
-						//{
-						//	for(int fd=0; fd<data.fd.size(); fd++)
-						//	{
-						//		
-						//	}
-						//}
+						for(int gd=0; gd<data.gd.size(); gd++)
+						{
+							for(int fd=0; fd<data.fd.size(); fd++)
+							{
+								
+							}
+						}
 					}
 				}
 			}
