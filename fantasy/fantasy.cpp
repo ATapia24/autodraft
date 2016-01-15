@@ -64,12 +64,18 @@ void *task(void *arg){
         		
 					for(int cr=0; cr<data.cr.size(); cr++)
 					{
-						//cout << data.TNumber << '\n';
+						for(int gd=0; gd<data.gd.size(); gd++)
+						{
+							for(int fd=0; fd<data.fd.size(); fd++)
+							{
+								
+							}
+						}
 					}
 				}
 			}
 		}
-			cout << data.TMin << '/' << data.TMax << endl;
+			cout << pg << '/' << data.TMax << endl;
 	}
 }
 
