@@ -69,11 +69,7 @@ void *task(void *arg){
 				}
 			}
 		}
-		
-		if(((data.TMax % 5) == 0) && data.TNumber == 2)
-		{
 			cout << data.TMin << '/' << data.TMax << endl;
-		}
 	}
 }
 
