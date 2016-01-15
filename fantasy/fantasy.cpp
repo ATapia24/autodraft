@@ -77,9 +77,11 @@ void *task(void *arg){
 		}
 			if(data.TNumber == 2)
 			{
-				cout << pg << '/' << data.TMax << endl;
+				cout << data.pg.size() - 13 << '/' << data.TMax - 13 << endl;
 			}
 	}
+
+	cout << "Thread " << data.TNumber << " done." << endl; 
 }
 
 int const N_THREADS = 4;
