@@ -75,7 +75,7 @@ void *task(void *arg){
 				}
 			}
 		}
-			if(data.TNumber == N_THREADS)
+			if(data.TNumber == 2)
 			{
 				cout << pg << '/' << data.TMax << endl;
 			}
