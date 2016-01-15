@@ -4,6 +4,7 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <pthread.h>
 
 using namespace std;
 
@@ -21,6 +22,20 @@ double fppd;
 bool injured;
 };
 
+struct taskData{
+	int TNumber;
+        int TMax;
+        int TMin;
+        vector<Player> pg;
+        vector<Player> sg;
+        vector<Player> sf;
+        vector<Player> pf;
+        vector<Player> cr;
+        vector<Player> gd;
+        vector<Player> fd;
+        vector<Player> ul;
+};
+
 //functions
 void downloadData();
 void loadPlayers(vector<Player>&);
@@ -30,8 +45,25 @@ void getPosition(vector<Player>, vector<Player>&, string);
 void sortFPPG(vector<Player>&, char);
 void sortFPPD(vector<Player>&, char);
 void sortSalary(vector<Player>&, char);
+void loadTaskData(taskData&, vector<Player>);
 
 
+void *task(void *arg){
+        
+	taskData data = *(taskData*)arg;
+
+	
+	for(int p=data.TMin; p<data.TMax; p++)
+	{
+        	for(int s=0; s<data.sg.size(); s++)
+        	{
+			cout << "thread: " << data.TNumber << ' ' << data.pg[p].name << ' ' << data.sg[s].name << '\n';
+		}
+	}
+}
+
+int const N_THREADS = 2;
+	
 int main(int argc, char *argv[]){
 
 	cout << "Auto Drafter: Beta" << endl;	
@@ -45,12 +77,66 @@ int main(int argc, char *argv[]){
 	//load players
 	loadPlayers(players);
 	
+	taskData t1;
+	taskData t2;
+
+	t1.TNumber = 1;
+	t2.TNumber = 2;
 	
-	vector<Player> pointGuards;
-	getPosition(players, pointGuards, "C");
-	printPlayers(pointGuards);
+	loadTaskData(t1, players);
+	loadTaskData(t2, players);
+
+	pthread_t thread1, thread2;
+	
+ 	int i1, i2;
 	
 	
+	i1 = pthread_create( &thread1, NULL, task, &t1);
+	i2 = pthread_create( &thread2, NULL, task, &t2);
+
+	pthread_join(thread1,NULL);
+	pthread_join(thread2,NULL);
+}
+
+//LOAD TASK DATA
+//DESC. load players into task data and calc min/max 
+void loadTaskData(taskData &data, vector<Player> players)
+{
+	vector<Player> pg;
+        vector<Player> sg;
+        vector<Player> sf;
+        vector<Player> pf;
+        vector<Player> cr;
+        vector<Player> gd;
+        vector<Player> fd;
+
+        getPosition(players, pg, "PG");
+        getPosition(players, sg, "SG");
+        getPosition(players, sf, "SF");
+        getPosition(players, pf, "PF");
+        getPosition(players, cr, "C");
+        getPosition(players, gd, "GD");
+        getPosition(players, fd, "FD");
+	
+	data.pg = pg;
+	data.sg = sg;
+	data.sf = sf;
+	data.pf = pf;
+	data.cr = cr;
+	data.gd = gd;
+	data.fd = fd;
+	data.ul = players;
+
+	//calc min/max
+	int dataOffset = pg.size() /N_THREADS;
+	data.TMin = dataOffset * (data.TNumber - 1);
+	data.TMax = dataOffset * data.TNumber;
+
+	
+        if((pg.size() % N_THREADS) > 0)
+        {
+		data.TMax += (pg.size() % N_THREADS);
+        }
 }
 
 //GET POSITION
