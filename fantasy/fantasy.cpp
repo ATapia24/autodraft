@@ -66,7 +66,7 @@ void *task(void *arg){
 					{
 						cout << data.TNumber << '\n';
 					}
-				{
+				}
 			}
 		}
 	}
