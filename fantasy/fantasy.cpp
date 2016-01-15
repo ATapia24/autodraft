@@ -64,10 +64,15 @@ void *task(void *arg){
         		
 					for(int cr=0; cr<data.cr.size(); cr++)
 					{
-						cout << data.TNumber << '\n';
+						//cout << data.TNumber << '\n';
 					}
 				}
 			}
+		}
+		
+		if(((data.TMax % 5) == 0) && data.TNumber == 2)
+		{
+			cout << data.TMin << '/' << data.TMax << endl;
 		}
 	}
 }
