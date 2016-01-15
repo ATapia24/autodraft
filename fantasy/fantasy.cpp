@@ -53,11 +53,21 @@ void *task(void *arg){
 	taskData data = *(taskData*)arg;
 
 	
-	for(int p=data.TMin; p<data.TMax; p++)
+	for(int pg=data.TMin; pg<data.TMax; pg++)
 	{
         	for(int s=0; s<data.sg.size(); s++)
-        	{
-			cout << "thread: " << data.TNumber << ' ' << data.pg[p].name << ' ' << data.sg[s].name << '\n';
+		{
+        		for(int sf=0; sf<data.sf.size(); sf++)
+			{
+        			for(int pf=0; pf<data.pf.size(); pf++)
+				{
+        		
+					for(int cr=0; cr<data.cr.size(); cr++)
+					{
+						cout << data.TNumber << '\n';
+					}
+				{
+			}
 		}
 	}
 }
