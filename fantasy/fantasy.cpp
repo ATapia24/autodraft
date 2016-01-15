@@ -75,7 +75,10 @@ void *task(void *arg){
 				}
 			}
 		}
-			cout << pg << '/' << data.TMax << endl;
+			if(data.TNumber == N_THREADS)
+			{
+				cout << pg << '/' << data.TMax << endl;
+			}
 	}
 }
 
