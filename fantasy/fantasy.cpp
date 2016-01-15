@@ -26,6 +26,8 @@ struct taskData{
 	int TNumber;
         int TMax;
         int TMin;
+	int iter;
+	pthread_t thread;
         vector<Player> pg;
         vector<Player> sg;
         vector<Player> sf;
@@ -47,7 +49,7 @@ void sortFPPD(vector<Player>&, char);
 void sortSalary(vector<Player>&, char);
 void loadTaskData(taskData&, vector<Player>);
 
-
+int const N_THREADS = 8;
 void *task(void *arg){
         
 	taskData data = *(taskData*)arg;
@@ -64,27 +66,25 @@ void *task(void *arg){
         		
 					for(int cr=0; cr<data.cr.size(); cr++)
 					{
-						for(int gd=0; gd<data.gd.size(); gd++)
-						{
+						//for(int gd=0; gd<data.gd.size(); gd++)
+						//{
 						//	for(int fd=0; fd<data.fd.size(); fd++)
 						//	{
 						//		
 						//	}
-						}
+						//}
 					}
 				}
 			}
 		}
-			if(data.TNumber == 2)
+			if(data.TNumber == N_THREADS)
 			{
-				cout << data.pg.size() - 13 << '/' << data.TMax - 13 << endl;
+				cout << pg <<  '/' << data.TMax << endl;
 			}
 	}
 
 	cout << "Thread " << data.TNumber << " done." << endl; 
 }
-
-int const N_THREADS = 4;
 	
 int main(int argc, char *argv[]){
 
@@ -99,35 +99,21 @@ int main(int argc, char *argv[]){
 	//load players
 	loadPlayers(players);
 	
-	taskData t1;
-	taskData t2;
-	taskData t3;
-	taskData t4;
-
-	t1.TNumber = 1;
-	t2.TNumber = 2;
-	t3.TNumber = 3;
-	t4.TNumber = 4;
+	vector<taskData> threads;
 	
-	loadTaskData(t1, players);
-	loadTaskData(t2, players);
-	loadTaskData(t3, players);
-	loadTaskData(t4, players);
-
-	pthread_t thread1, thread2, thread3, thread4;
+	for(int i=0; i<N_THREADS; i++)
+	{
+		taskData tempT;
+		tempT.TNumber = i + 1;
+		loadTaskData(tempT, players);
+		threads.push_back(tempT);
+		threads[i].iter = pthread_create(&threads[i].thread, NULL, task, &threads[i]);
+	}
 	
- 	int i1, i2, i3, i4;
-	
-	
-	i1 = pthread_create( &thread1, NULL, task, &t1);
-	i2 = pthread_create( &thread2, NULL, task, &t2);
-	i3 = pthread_create( &thread3, NULL, task, &t3);
-	i4 = pthread_create( &thread4, NULL, task, &t4);
-	
-	pthread_join(thread1,NULL);
-	pthread_join(thread2,NULL);
-	pthread_join(thread3,NULL);
-	pthread_join(thread4,NULL);
+	for(int i=0; i<N_THREADS; i++)
+	{
+		pthread_join(threads[i].thread,NULL);
+	}
 
 }
 
