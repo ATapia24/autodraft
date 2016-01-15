@@ -82,7 +82,7 @@ void *task(void *arg){
 	}
 }
 
-int const N_THREADS = 2;
+int const N_THREADS = 4;
 	
 int main(int argc, char *argv[]){
 
@@ -99,23 +99,34 @@ int main(int argc, char *argv[]){
 	
 	taskData t1;
 	taskData t2;
+	taskData t3;
+	taskData t4;
 
 	t1.TNumber = 1;
 	t2.TNumber = 2;
+	t3.TNumber = 3;
+	t4.TNumber = 4;
 	
 	loadTaskData(t1, players);
 	loadTaskData(t2, players);
+	loadTaskData(t3, players);
+	loadTaskData(t4, players);
 
-	pthread_t thread1, thread2;
+	pthread_t thread1, thread2, thread3, thread4;
 	
- 	int i1, i2;
+ 	int i1, i2, i3, i4;
 	
 	
 	i1 = pthread_create( &thread1, NULL, task, &t1);
 	i2 = pthread_create( &thread2, NULL, task, &t2);
-
+	i3 = pthread_create( &thread3, NULL, task, &t3);
+	i4 = pthread_create( &thread4, NULL, task, &t4);
+	
 	pthread_join(thread1,NULL);
 	pthread_join(thread2,NULL);
+	pthread_join(thread3,NULL);
+	pthread_join(thread4,NULL);
+
 }
 
 //LOAD TASK DATA
