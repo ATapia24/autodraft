@@ -49,7 +49,7 @@ void sortFPPD(vector<Player>&, char);
 void sortSalary(vector<Player>&, char);
 void loadTaskData(taskData&, vector<Player>);
 
-int const N_THREADS = 8;
+int const N_THREADS = 4;
 void *task(void *arg){
         
 	taskData data = *(taskData*)arg;
