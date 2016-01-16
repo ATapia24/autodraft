@@ -1,5 +1,7 @@
 #!/bin/bash
 # Push to git repo
-git . add
-git commit -m "update"
+
+now="$(date +"%r")"
+git add .
+git commit -m "Update: $date"
 git push
