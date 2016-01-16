@@ -38,6 +38,17 @@ struct taskData{
         vector<Player> ul;
 };
 
+struct Lineup{
+	Player pg;
+	Player sg;
+	Player sf;
+	Player pf;
+	Player cr;
+	Player gd;
+	Player fd;
+	Player ul;
+};
+
 //functions
 void downloadData();
 void loadPlayers(vector<Player>&);
@@ -48,29 +59,65 @@ void sortFPPG(vector<Player>&, char);
 void sortFPPD(vector<Player>&, char);
 void sortSalary(vector<Player>&, char);
 void loadTaskData(taskData&, vector<Player>);
+void loadThreads(vector<taskData>&, vector<Player>);
+void printLineup(Lineup);
 
-int const N_THREADS = 1;
+//TASK - ALG
+//DESC. Thread function (calcs)
+int const N_THREADS = 2;
 void *task(void *arg){
         
 	taskData data = *(taskData*)arg;
-
+	Lineup lineup;
 	
 	for(int pg=data.TMin; pg<data.TMax; pg++)
 	{
-        	for(int s=0; s<data.sg.size(); s++)
+		lineup.pg = data.pg[pg];
+		
+        	for(int sg=0; sg<data.sg.size(); sg++)
 		{
+			lineup.sg = data.sg[sg];
+			
         		for(int sf=0; sf<data.sf.size(); sf++)
 			{
+				lineup.sf = data.sf[sf];
+				
         			for(int pf=0; pf<data.pf.size(); pf++)
 				{
+					lineup.pf = data.pf[pf];
         		
 					for(int cr=0; cr<data.cr.size(); cr++)
 					{
+						lineup.cr = data.cr[cr];
+	
 						for(int gd=0; gd<data.gd.size(); gd++)
 						{
+			
+			while(((data.gd[gd].id == lineup.pg.id) || (data.gd[gd].id == lineup.sg.id)) && gd < data.gd.size()-1)
+			{
+				gd++;					
+			}
+			
+			lineup.gd = data.gd[gd];			
 							for(int fd=0; fd<data.fd.size(); fd++)
 							{
+			
+			while(((data.fd[fd].id == lineup.sf.id) || (data.fd[fd].id == lineup.pf.id)) && fd < data.fd.size()-1)
+                        {
+                                fd++;                           
+                        }
+
+                        lineup.fd = data.fd[fd];
+								for(int ul=0; ul<data.ul.size(); ul++)
+								{
 								
+			while(((data.ul[ul].id == lineup.pg.id) ||(data.ul[ul].id == lineup.sg.id) ||(data.ul[ul].id == lineup.sf.id) || (data.ul[ul].id == lineup.pf.id)|| (data.ul[ul].id == lineup.cr.id)) && ul < (data.ul.size()-1))
+                        {                               
+                                fd++;                           
+                       }
+
+                        lineup.fd = data.fd[fd];	
+								}	
 							}
 						}
 					}
@@ -89,7 +136,9 @@ void *task(void *arg){
 int main(int argc, char *argv[]){
 
 	cout << "Auto Drafter: Beta" << endl;	
+	
 	vector<Player> players;
+	vector<taskData> threads;
 
 	//update data
 	if(argc >= 2){
@@ -99,24 +148,44 @@ int main(int argc, char *argv[]){
 	//load players
 	loadPlayers(players);
 	
-	vector<taskData> threads;
-	
-	for(int i=0; i<N_THREADS; i++)
-	{
-		taskData tempT;
-		tempT.TNumber = i + 1;
-		loadTaskData(tempT, players);
-		threads.push_back(tempT);
-		threads[i].iter = pthread_create(&threads[i].thread, NULL, task, &threads[i]);
-	}
-	
-	for(int i=0; i<N_THREADS; i++)
-	{
-		pthread_join(threads[i].thread,NULL);
-	}
-
+	//load threads
+	loadThreads(threads, players);
 }
 
+//PRINT LINEUP
+//DESC. Print lineup
+void printLineup(Lineup lineup)
+{
+	cout << "-----------------------------------------\n";
+	
+	cout << "PG: " << lineup.pg.name << '\n';
+	cout << "SG: " << lineup.sg.name << '\n';
+	cout << "SF: " << lineup.sf.name << '\n';
+	cout << "PF: " << lineup.pf.name << '\n';
+	cout << "CR: " << lineup.cr.name << '\n';
+	cout << "GD: " << lineup.gd.name << '\n';
+	cout << "FD: " << lineup.fd.name << '\n';
+	cout << "UL: " << lineup.ul.name << '\n';
+}
+
+//LOAD THREADS
+//DESC. load/setup pthreads
+void loadThreads(vector<taskData> &threads, vector<Player> players)
+{
+	for(int i=0; i<N_THREADS; i++)
+        {
+                taskData tempT;
+                tempT.TNumber = i + 1;
+                loadTaskData(tempT, players);
+                threads.push_back(tempT);
+                threads[i].iter = pthread_create(&threads[i].thread, NULL, task, &threads[i]);
+        }
+
+        for(int i=0; i<N_THREADS; i++)
+        {
+                pthread_join(threads[i].thread,NULL);
+        }
+}
 //LOAD TASK DATA
 //DESC. load players into task data and calc min/max 
 void loadTaskData(taskData &data, vector<Player> players)
