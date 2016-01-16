@@ -1,0 +1,8 @@
+#!/bin/bash
+# Push to git repo
+timestamp() {
+date +"%T"
+}
+git add .
+git commit -m "Update: $(timestamp)"
+git push
