@@ -1,0 +1,4 @@
+#!/bin/bash
+# Push to git repo
+g++ -lpthread -o fantasy fantasy.cpp
+time ./fantasy

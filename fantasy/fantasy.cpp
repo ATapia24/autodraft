@@ -64,7 +64,7 @@ void printLineup(Lineup);
 
 //TASK - ALG
 //DESC. Thread function (calcs)
-int const N_THREADS = 2;
+int const N_THREADS = 8;
 void *task(void *arg){
         
 	taskData data = *(taskData*)arg;
@@ -77,11 +77,11 @@ void *task(void *arg){
         	for(int sg=0; sg<data.sg.size(); sg++)
 		{
 			lineup.sg = data.sg[sg];
-			
+					
         		for(int sf=0; sf<data.sf.size(); sf++)
 			{
 				lineup.sf = data.sf[sf];
-				
+		
         			for(int pf=0; pf<data.pf.size(); pf++)
 				{
 					lineup.pf = data.pf[pf];
@@ -92,31 +92,46 @@ void *task(void *arg){
 	
 						for(int gd=0; gd<data.gd.size(); gd++)
 						{
+							//while gd player is not == pg or sg and in range of gd vector
+							while(((data.gd[gd].id == data.pg[pg].id)
+							|| (data.gd[gd].id == data.sg[sg].id))
+							&& gd < (data.gd.size()-1))
+								{
+									gd++;
+								}
+							
+							lineup.gd = data.gd[gd];
 			
-			while(((data.gd[gd].id == lineup.pg.id) || (data.gd[gd].id == lineup.sg.id)) && gd < data.gd.size()-1)
-			{
-				gd++;					
-			}
-			
-			lineup.gd = data.gd[gd];			
 							for(int fd=0; fd<data.fd.size(); fd++)
 							{
-			
-			while(((data.fd[fd].id == lineup.sf.id) || (data.fd[fd].id == lineup.pf.id)) && fd < data.fd.size()-1)
-                        {
-                                fd++;                           
-                        }
-
-                        lineup.fd = data.fd[fd];
-								for(int ul=0; ul<data.ul.size(); ul++)
-								{
+								//while gd playe ros != sf or pf and in range of gd vector
+								while(((data.fd[fd].id == data.sf[sf].id)
+                                                        	|| (data.fd[fd].id == data.pf[pf].id))
+                                                        	&& fd < (data.fd.size()-1))
+                                                                {
+                                                                        fd++;
+                                                                }
 								
-			while(((data.ul[ul].id == lineup.pg.id) ||(data.ul[ul].id == lineup.sg.id) ||(data.ul[ul].id == lineup.sf.id) || (data.ul[ul].id == lineup.pf.id)|| (data.ul[ul].id == lineup.cr.id)) && ul < (data.ul.size()-1))
-                        {                               
-                                fd++;                           
-                       }
+								lineup.fd = data.fd[fd];
+				
+								for(int ul=0; (ul<data.ul.size()); ul++)
+								{	
+									//while ul player is not in lineup and ul is in range
+									/*while(
+									((data.ul[ul].id == data.pg[pg].id)
+                                                                	|| (data.ul[ul].id == data.sg[sg].id)
+                                                                	|| (data.ul[ul].id == data.sf[sf].id)
+                                                                	|| (data.ul[ul].id == data.pf[pf].id)
+                                                                	|| (data.ul[ul].id == data.cr[cr].id))
+                                                                	&& ul < (data.ul.size()-1)
+									)
+                                                           		{
+                                                                        	ul++;
+                                                                	}*/
 
-                        lineup.fd = data.fd[fd];	
+									lineup.ul = data.ul[ul];
+									
+									//CENTER
 								}	
 							}
 						}
@@ -126,7 +141,7 @@ void *task(void *arg){
 		}
 			if(data.TNumber == N_THREADS)
 			{
-				cout << pg <<  '/' << data.TMax << endl;
+				cout << pg+1 <<  '/' << data.TMax << endl;
 			}
 	}
 
@@ -157,7 +172,6 @@ int main(int argc, char *argv[]){
 void printLineup(Lineup lineup)
 {
 	cout << "-----------------------------------------\n";
-	
 	cout << "PG: " << lineup.pg.name << '\n';
 	cout << "SG: " << lineup.sg.name << '\n';
 	cout << "SF: " << lineup.sf.name << '\n';
@@ -174,13 +188,24 @@ void loadThreads(vector<taskData> &threads, vector<Player> players)
 {
 	for(int i=0; i<N_THREADS; i++)
         {
+		//set thread vector size or segfault (if seg set on threads initilize)
+		threads.reserve(N_THREADS);
                 taskData tempT;
-                tempT.TNumber = i + 1;
-                loadTaskData(tempT, players);
-                threads.push_back(tempT);
-                threads[i].iter = pthread_create(&threads[i].thread, NULL, task, &threads[i]);
+               	
+		//set thread number
+		tempT.TNumber = i + 1;
+                
+		//load task data
+		loadTaskData(tempT, players);
+                
+		//add to vectot
+		threads.push_back(tempT);
+               
+		 //start threads
+		threads[i].iter = pthread_create(&threads[i].thread, NULL, task, &threads[i]);
         }
 
+	//wait for all threads to finish to continue
         for(int i=0; i<N_THREADS; i++)
         {
                 pthread_join(threads[i].thread,NULL);
@@ -220,7 +245,7 @@ void loadTaskData(taskData &data, vector<Player> players)
 	data.TMin = dataOffset * (data.TNumber - 1);
 	data.TMax = dataOffset * data.TNumber;
 
-	
+	//give last thread the remainer	
         if((pg.size() % N_THREADS) > 0)
         {
 		data.TMax += (pg.size() % N_THREADS);
@@ -231,8 +256,10 @@ void loadTaskData(taskData &data, vector<Player> players)
 //DESC. pull position out of player vector into another
 void getPosition(vector<Player> allPlayers, vector<Player> &posPlayers, string pos)
 {
+	//LOOP THROUGH LIST
 	for(int i=0; i<allPlayers.size(); i++)
 	{	
+		//GUARD
 		if(pos == "GD")
 		{
 			if((allPlayers[i].position == "PG") || (allPlayers[i].position == "SG"))
@@ -240,6 +267,7 @@ void getPosition(vector<Player> allPlayers, vector<Player> &posPlayers, string p
                                 posPlayers.push_back(allPlayers[i]);
                         }
 	
+		//FORWARD
 		}else if(pos == "FD")
 		{
 			if((allPlayers[i].position == "SF") || (allPlayers[i].position == "PF"))
@@ -247,6 +275,7 @@ void getPosition(vector<Player> allPlayers, vector<Player> &posPlayers, string p
                                 posPlayers.push_back(allPlayers[i]);
                         }
 		}
+		//PASSED POS
 		else{
 
 			if(allPlayers[i].position == pos)
