@@ -22,16 +22,40 @@ double fppd;
 bool injured;
 };
 
-struct Lineup{
-	Player pg;
-	Player sg;
-	Player sf;
-	Player pf;
-	Player cr;
-	Player gd;
-	Player fd;
-	Player ul;
+struct PlayerMatrix
+{
+	vector< vector<Player> > players;
 };
+
+class Lineup
+{
+	public:
+		Lineup(PlayerMatrix _matrix);
+		void print();
+	private:
+		PlayerMatrix matrix;
+		vector<Player> players;
+};
+
+Lineup::Lineup(PlayerMatrix _matrix)
+{
+	matrix = _matrix;
+	
+	for(int i=0; i<8; i++)
+	{
+		players[i] = matrix.players[i][0];
+	}
+}
+
+void Lineup::print()
+{
+	cout << "----------------------------------\n";
+	
+	for(int i=0; i<8; i++)
+	{
+		cout << players[i].position << ": " << players[i].name << '\n';
+	}	
+}
 
 //functions
 void downloadData();
@@ -42,74 +66,107 @@ void getPosition(vector<Player>, vector<Player>&, string);
 void sortFPPG(vector<Player>&, char);
 void sortFPPD(vector<Player>&, char);
 void sortSalary(vector<Player>&, char);
-void printLineup(Lineup);
 void rmLowFPPD(vector<Player>&);
+void genLineup(PlayerMatrix);
+void loadMatrix(vector<Player>, PlayerMatrix&);
 	
 int main(int argc, char *argv[]){
 
 	cout << "Auto Drafter: Beta" << endl;	
 	
-	vector<Player> players;
-
 	//update data
 	if(argc >= 2){
 		downloadData();
 	}
 	
+	vector<Player> players;
+	PlayerMatrix matrix;
 
-	//load players
+	//load players and matrix
 	loadPlayers(players);
+	loadMatrix(players, matrix);
 
-	vector<Player> pgs;
+	//generate lineup
+	genLineup(matrix);
+		
+}
 
-	getPosition(players, pgs, "PG");
-	
-	sortFPPD(pgs, 'd');
+//GENERATE LINEUP
+//DESC, GENERATE LINEUP
+void genLineup(PlayerMatrix matrix)
+{
+	Lineup lineup(matrix);
+	lineup.print();	
+}
+//LOAD MATRIX
+//DESC. LOAD PLAYERS INTO PLAYER MATRIX
+void loadMatrix(vector<Player> players, PlayerMatrix &matrix)
+{
+	vector<Player> PG;
+	vector<Player> SG;
+	vector<Player> SF;
+	vector<Player> PF;
+	vector<Player> C;
+	vector<Player> GD;
+	vector<Player> FD;
+	vector<Player> UL;
 
-	printPlayers(pgs);
-	
-	cout << "Adj. Players" << endl;
-	
-	
-	rmLowFPPD(pgs);
-	
-	printPlayers(pgs);	
+
+	getPosition(players, PG, "PG");	
+	getPosition(players, SG, "SG");	
+	getPosition(players, SF, "SF");	
+	getPosition(players, PF, "PF");	
+	getPosition(players, C, "C");	
+	getPosition(players, GD, "GD");	
+	getPosition(players, FD, "FD");	
+	UL = players;
+
+	//FIX******
+	matrix.players.reserve(8);
+	matrix.players[0].reserve(PG.size());
+	cout << "fsedf" << endl;
+	cout << matrix.players.size() << " : " << matrix.players[1].size() << endl;
+	matrix.players[1].reserve(SG.size());
+	cout << "2" << endl;
+	matrix.players[2].reserve(SF.size());
+	matrix.players[3].reserve(PF.size());
+	matrix.players[4].reserve(C.size());
+	matrix.players[5].reserve(GD.size());
+	matrix.players[6].reserve(FD.size());
+	matrix.players[7].reserve(UL.size());
+
+	matrix.players[0] = PG;
+	matrix.players[1] = SG;
+	matrix.players[2] = SF;
+	matrix.players[3] = PF;
+	matrix.players[4] = C;
+	matrix.players[5] = GD;
+	matrix.players[6] = FD;
+	matrix.players[7] = UL;
 }
 
 //REMOVE LOW FPPD
 //DESC. REMOVE PLAYERS WITH LOWER FPPD
 void rmLowFPPD(vector<Player> &players)
 {
+	//sort by fppd decsending
 	sortFPPD(players, 'd');
 
 	for(int i=0; i<players.size(); i++)
 	{
+		//dont check cuurent player in index j=i+1
 		for(int j=(i+1); j<players.size(); j++)
 		{
 	
 			if(players[i].fppg > players[j].fppg)
 			{
-				cout << players[i].fppg << ">" << players[j].fppg << endl;
+				//remove player and adjust j
 				players.erase(players.begin() + j);
 				j--;
 			}
 		}
 		
 	}
-}
-//PRINT LINEUP
-//DESC. Print lineup
-void printLineup(Lineup lineup)
-{
-	cout << "-----------------------------------------\n";
-	cout << "PG: " << lineup.pg.name << '\n';
-	cout << "SG: " << lineup.sg.name << '\n';
-	cout << "SF: " << lineup.sf.name << '\n';
-	cout << "PF: " << lineup.pf.name << '\n';
-	cout << "CR: " << lineup.cr.name << '\n';
-	cout << "GD: " << lineup.gd.name << '\n';
-	cout << "FD: " << lineup.fd.name << '\n';
-	cout << "UL: " << lineup.ul.name << '\n';
 }
 
 //GET POSITION
