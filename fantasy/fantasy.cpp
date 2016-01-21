@@ -22,22 +22,6 @@ double fppd;
 bool injured;
 };
 
-struct taskData{
-	int TNumber;
-        int TMax;
-        int TMin;
-	int iter;
-	pthread_t thread;
-        vector<Player> pg;
-        vector<Player> sg;
-        vector<Player> sf;
-        vector<Player> pf;
-        vector<Player> cr;
-        vector<Player> gd;
-        vector<Player> fd;
-        vector<Player> ul;
-};
-
 struct Lineup{
 	Player pg;
 	Player sg;
@@ -58,115 +42,61 @@ void getPosition(vector<Player>, vector<Player>&, string);
 void sortFPPG(vector<Player>&, char);
 void sortFPPD(vector<Player>&, char);
 void sortSalary(vector<Player>&, char);
-void loadTaskData(taskData&, vector<Player>);
-void loadThreads(vector<taskData>&, vector<Player>);
 void printLineup(Lineup);
-
-//TASK - ALG
-//DESC. Thread function (calcs)
-int const N_THREADS = 8;
-void *task(void *arg){
-        
-	taskData data = *(taskData*)arg;
-	Lineup lineup;
-	
-	for(int pg=data.TMin; pg<data.TMax; pg++)
-	{
-		lineup.pg = data.pg[pg];
-		
-        	for(int sg=0; sg<data.sg.size(); sg++)
-		{
-			lineup.sg = data.sg[sg];
-					
-        		for(int sf=0; sf<data.sf.size(); sf++)
-			{
-				lineup.sf = data.sf[sf];
-		
-        			for(int pf=0; pf<data.pf.size(); pf++)
-				{
-					lineup.pf = data.pf[pf];
-        		
-					for(int cr=0; cr<data.cr.size(); cr++)
-					{
-						lineup.cr = data.cr[cr];
-	
-						for(int gd=0; gd<data.gd.size(); gd++)
-						{
-							//while gd player is not == pg or sg and in range of gd vector
-							while(((data.gd[gd].id == data.pg[pg].id)
-							|| (data.gd[gd].id == data.sg[sg].id))
-							&& gd < (data.gd.size()-1))
-								{
-									gd++;
-								}
-							
-							lineup.gd = data.gd[gd];
-			
-							for(int fd=0; fd<data.fd.size(); fd++)
-							{
-								//while gd playe ros != sf or pf and in range of gd vector
-								while(((data.fd[fd].id == data.sf[sf].id)
-                                                        	|| (data.fd[fd].id == data.pf[pf].id))
-                                                        	&& fd < (data.fd.size()-1))
-                                                                {
-                                                                        fd++;
-                                                                }
-								
-								lineup.fd = data.fd[fd];
-				
-								for(int ul=0; (ul<data.ul.size()); ul++)
-								{	
-									//while ul player is not in lineup and ul is in range
-									/*while(
-									((data.ul[ul].id == data.pg[pg].id)
-                                                                	|| (data.ul[ul].id == data.sg[sg].id)
-                                                                	|| (data.ul[ul].id == data.sf[sf].id)
-                                                                	|| (data.ul[ul].id == data.pf[pf].id)
-                                                                	|| (data.ul[ul].id == data.cr[cr].id))
-                                                                	&& ul < (data.ul.size()-1)
-									)
-                                                           		{
-                                                                        	ul++;
-                                                                	}*/
-
-									lineup.ul = data.ul[ul];
-									
-									//CENTER
-								}	
-							}
-						}
-					}
-				}
-			}
-		}
-			if(data.TNumber == N_THREADS)
-			{
-				cout << pg+1 <<  '/' << data.TMax << endl;
-			}
-	}
-
-	cout << "Thread " << data.TNumber << " done." << endl; 
-}
+void rmLowFPPD(vector<Player>&);
 	
 int main(int argc, char *argv[]){
 
 	cout << "Auto Drafter: Beta" << endl;	
 	
 	vector<Player> players;
-	vector<taskData> threads;
 
 	//update data
 	if(argc >= 2){
 		downloadData();
 	}
 	
+
 	//load players
 	loadPlayers(players);
+
+	vector<Player> pgs;
+
+	getPosition(players, pgs, "PG");
 	
-	//load threads
-	loadThreads(threads, players);
+	sortFPPD(pgs, 'd');
+
+	printPlayers(pgs);
+	
+	cout << "Adj. Players" << endl;
+	
+	
+	rmLowFPPD(pgs);
+	
+	printPlayers(pgs);	
 }
 
+//REMOVE LOW FPPD
+//DESC. REMOVE PLAYERS WITH LOWER FPPD
+void rmLowFPPD(vector<Player> &players)
+{
+	sortFPPD(players, 'd');
+
+	for(int i=0; i<players.size(); i++)
+	{
+		for(int j=(i+1); j<players.size(); j++)
+		{
+	
+			if(players[i].fppg > players[j].fppg)
+			{
+				cout << players[i].fppg << ">" << players[j].fppg << endl;
+				players.erase(players.begin() + j);
+				j--;
+			}
+		}
+		
+	}
+}
 //PRINT LINEUP
 //DESC. Print lineup
 void printLineup(Lineup lineup)
@@ -180,76 +110,6 @@ void printLineup(Lineup lineup)
 	cout << "GD: " << lineup.gd.name << '\n';
 	cout << "FD: " << lineup.fd.name << '\n';
 	cout << "UL: " << lineup.ul.name << '\n';
-}
-
-//LOAD THREADS
-//DESC. load/setup pthreads
-void loadThreads(vector<taskData> &threads, vector<Player> players)
-{
-	for(int i=0; i<N_THREADS; i++)
-        {
-		//set thread vector size or segfault (if seg set on threads initilize)
-		threads.reserve(N_THREADS);
-                taskData tempT;
-               	
-		//set thread number
-		tempT.TNumber = i + 1;
-                
-		//load task data
-		loadTaskData(tempT, players);
-                
-		//add to vectot
-		threads.push_back(tempT);
-               
-		 //start threads
-		threads[i].iter = pthread_create(&threads[i].thread, NULL, task, &threads[i]);
-        }
-
-	//wait for all threads to finish to continue
-        for(int i=0; i<N_THREADS; i++)
-        {
-                pthread_join(threads[i].thread,NULL);
-        }
-}
-//LOAD TASK DATA
-//DESC. load players into task data and calc min/max 
-void loadTaskData(taskData &data, vector<Player> players)
-{
-	vector<Player> pg;
-        vector<Player> sg;
-        vector<Player> sf;
-        vector<Player> pf;
-        vector<Player> cr;
-        vector<Player> gd;
-        vector<Player> fd;
-
-        getPosition(players, pg, "PG");
-        getPosition(players, sg, "SG");
-        getPosition(players, sf, "SF");
-        getPosition(players, pf, "PF");
-        getPosition(players, cr, "C");
-        getPosition(players, gd, "GD");
-        getPosition(players, fd, "FD");
-	
-	data.pg = pg;
-	data.sg = sg;
-	data.sf = sf;
-	data.pf = pf;
-	data.cr = cr;
-	data.gd = gd;
-	data.fd = fd;
-	data.ul = players;
-
-	//calc min/max
-	int dataOffset = pg.size() /N_THREADS;
-	data.TMin = dataOffset * (data.TNumber - 1);
-	data.TMax = dataOffset * data.TNumber;
-
-	//give last thread the remainer	
-        if((pg.size() % N_THREADS) > 0)
-        {
-		data.TMax += (pg.size() % N_THREADS);
-        }
 }
 
 //GET POSITION
@@ -379,12 +239,12 @@ void sortSalary(vector<Player> &players, char order)
 void printPlayer(Player player)
 {	
 	cout << "Name    : " << player.name << '\n';
-	cout << "Pos     : " << player.position << '\n';
+	//cout << "Pos     : " << player.position << '\n';
 	//cout << "Team    : " << player.team << '\n';
 	//cout << "Opp     : " << player.opponent << '\n';
-	//cout << "FPPG    : " << player.fppg << '\n';
-	//cout << "FPPD    : " << player.fppd << '\n';
-	cout << "Salary  : " << player.salary << '\n';
+	cout << "FPPG    : " << player.fppg << '\n';
+	cout << "FPPD    : " << player.fppd << '\n';
+	//cout << "Salary  : " << player.salary << '\n';
 	//cout << "Injured : " << player.injured << '\n';			
 }
 
