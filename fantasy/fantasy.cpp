@@ -150,13 +150,12 @@ int Lineup::setPlayer(int pos, int index)
 	while(inLineup)
 	{
 		bool flag=0;
-		
+	
 		for(int i=0; i<8; i++)
 		{
-			if(matrix.players[pos].size() == (index+offset))
+			if(matrix.players[pos].size() < (index+offset))
 			{
-				return -1;
-			
+				return -1;	
 			}
 
 			if(players[i].name == matrix.players[pos][index + offset].name)
@@ -172,7 +171,7 @@ int Lineup::setPlayer(int pos, int index)
 		}	
 	}
 	
-	//cout << players[pos].name << " -> " << matrix.players[pos][index + offset].name << endl;
+	cout << players[pos].name << " -> " << matrix.players[pos][index + offset].name << endl;
 	players[pos] = matrix.players[pos][index + offset];
 	players[pos].lineupPos = pos;
 	
@@ -220,29 +219,24 @@ void genLineup(PlayerMatrix matrix)
 	{
 		index[i] = 0;
 	}
-
-	cout << "starting lineup" << endl;
-	lineup.print();
-
+	
 	bool maxed = 0;
 	bool posMaxed = 0;
-	int count=0;
-	while(!maxed && (count < 2500))
+	while(!maxed)
 	{
-		while((lineup.salary()<=200) && count < 2500 && !posMaxed)
+		while((lineup.salary()<=200) && !posMaxed)
 		{
-			cout << "1" << endl;
 			//update fppg list order
 			fppgOrder = lineup.lowFPPG();
-			cout << "2" << endl;
+
 			//++index for current orderindex
 			index[(fppgOrder[orderIndex])]++;
 			
-			cout << "3" << endl;
 			//set player
 			//index[orderIndex] += lineup.setPlayer(fppgOrder[orderIndex],index[(fppgOrder[orderIndex])]);
 
 			offset = lineup.setPlayer(fppgOrder[orderIndex],index[(fppgOrder[orderIndex])]);
+			
 			if(offset == -1)
 			{
 				posMaxed = 1;
@@ -255,12 +249,11 @@ void genLineup(PlayerMatrix matrix)
 				lineup.print();
 			}
 
-			count++;
 		}
 			
 		posMaxed = 0;
 		orderIndex++;
-		if(orderIndex > 8){maxed=1;}
+		if((orderIndex > 8)){maxed=1;}
 		
 	}
 }
