@@ -50,7 +50,7 @@ class Lineup
 		int salary();
 		double fppg();
 		void print();
-		void setPlayer(int, int);
+		int setPlayer(int, int);
 		vector<Player> getPlayers();
 	private:
 		PlayerMatrix matrix;
@@ -58,10 +58,15 @@ class Lineup
 		vector<int> fppgOrder;
 };
 
-//CONSTRUCTOR
+//CONSTRUCTOR ***NEED TO FIX BACKUP STARTING POS***
 //DESC. set lineup to first element in matrix for each slot
 Lineup::Lineup(PlayerMatrix _matrix)
 {
+	Player temp;
+	temp.id = 0;
+	temp.name = "Temp Player";
+	temp.fppg = 0;
+	temp.fppd = 0;	
 	//set martx and players size
 	matrix = _matrix;
 	players.resize(8);
@@ -69,7 +74,9 @@ Lineup::Lineup(PlayerMatrix _matrix)
 	//set lineup to first element int matrix
 	for(int i=0; i<8; i++)
 	{
-		players[i] = matrix.players[i][0];
+
+		//players[i] = matrix.players[i][0];
+		players[i] = temp;
 		players[i].lineupPos = i;
 	}
 }
@@ -82,19 +89,18 @@ vector<Player> Lineup::getPlayers()
 //LOW FPPG
 //DESC. return low fppg in lineup
 vector<int> Lineup::lowFPPG()
-{
-	fppgOrder.resize(8);	
+{	vector<int> fppgOrder;
+	fppgOrder.resize(8);
 	vector<Player> temp = players;
 	
 	//sort by fppg ascending
 	sortFPPG(temp, 'a');
-                       
+        
 	//set player pos order
 	for(int i=0; i<8; i++)
 	{
 		fppgOrder[i] = temp[i].lineupPos;
 	}
-	
 	return fppgOrder;
 }
 //FPPG
@@ -136,9 +142,41 @@ void Lineup::print()
 
 //SET PLAYER
 //DESC. set player in lineup
-void Lineup::setPlayer(int pos, int index)
+int Lineup::setPlayer(int pos, int index)
 {
-	players[pos] = matrix.players[pos][index];
+	int offset=0;
+	bool inLineup=1;
+
+	while(inLineup)
+	{
+		bool flag=0;
+		
+		for(int i=0; i<8; i++)
+		{
+			if(matrix.players[pos].size() == (index+offset))
+			{
+				return -1;
+			
+			}
+
+			if(players[i].name == matrix.players[pos][index + offset].name)
+			{
+					flag=1;
+					offset++;
+			}
+		}
+
+		if(!flag)
+		{
+			inLineup = 0;
+		}	
+	}
+	
+	//cout << players[pos].name << " -> " << matrix.players[pos][index + offset].name << endl;
+	players[pos] = matrix.players[pos][index + offset];
+	players[pos].lineupPos = pos;
+	
+	return offset;
 }
 
 int main(int argc, char *argv[]){
@@ -166,7 +204,7 @@ int main(int argc, char *argv[]){
 //DESC, GENERATE LINEUP
 void genLineup(PlayerMatrix matrix)
 {
-	Lineup lineup(matrix);
+	Lineup lineup(matrix), optLineup(matrix);
 	
 	//player pos index
 	vector<int> index;
@@ -176,21 +214,55 @@ void genLineup(PlayerMatrix matrix)
 	fppgOrder.resize(8);
 
 	int orderIndex = 0;
+	int offset=0;
 
 	for(int i=0; i<8; i++)
 	{
 		index[i] = 0;
 	}
 
-	while(lineup.salary()<=200)
-	{
-		fppgOrder = lineup.lowFPPG();
-		index[fppgOrder[orderIndex]]++;
-		lineup.setPlayer(fppgOrder[orderIndex],index[fppgOrder[orderIndex]]);
-		lineup.print();
-	}
-
+	cout << "starting lineup" << endl;
 	lineup.print();
+
+	bool maxed = 0;
+	bool posMaxed = 0;
+	int count=0;
+	while(!maxed && (count < 2500))
+	{
+		while((lineup.salary()<=200) && count < 2500 && !posMaxed)
+		{
+			cout << "1" << endl;
+			//update fppg list order
+			fppgOrder = lineup.lowFPPG();
+			cout << "2" << endl;
+			//++index for current orderindex
+			index[(fppgOrder[orderIndex])]++;
+			
+			cout << "3" << endl;
+			//set player
+			//index[orderIndex] += lineup.setPlayer(fppgOrder[orderIndex],index[(fppgOrder[orderIndex])]);
+
+			offset = lineup.setPlayer(fppgOrder[orderIndex],index[(fppgOrder[orderIndex])]);
+			if(offset == -1)
+			{
+				posMaxed = 1;
+			}else
+			{
+				index[orderIndex] += offset;
+			}	
+			if(lineup.salary()<=200)
+			{
+				lineup.print();
+			}
+
+			count++;
+		}
+			
+		posMaxed = 0;
+		orderIndex++;
+		if(orderIndex > 8){maxed=1;}
+		
+	}
 }
 //LOAD MATRIX
 //DESC. LOAD PLAYERS INTO PLAYER MATRIX
@@ -206,7 +278,6 @@ void loadMatrix(vector<Player> players, PlayerMatrix &matrix)
 	vector<Player> FD;
 	vector<Player> UL;
 
-
 	//fill player vectors
 	getPosition(players, PG, "PG");	
 	getPosition(players, SG, "SG");	
@@ -216,6 +287,7 @@ void loadMatrix(vector<Player> players, PlayerMatrix &matrix)
 	getPosition(players, GD, "GD");	
 	getPosition(players, FD, "FD");	
 	UL = players;
+
 
 	//set matrix sizes
 	matrix.players.resize(8);
@@ -237,6 +309,11 @@ void loadMatrix(vector<Player> players, PlayerMatrix &matrix)
 	matrix.players[5] = GD;
 	matrix.players[6] = FD;
 	matrix.players[7] = UL;
+
+	for(int i=0; i<8; i++)
+	{
+		rmLowFPPD(matrix.players[i]);
+	}
 }
 
 //REMOVE LOW FPPD
@@ -526,7 +603,7 @@ void loadPlayers(vector<Player> &playerVector)
 			
 
 			//add to vector
-			playerVector.push_back(tempPlayer);
+			if(!tempPlayer.injured){playerVector.push_back(tempPlayer);}
 			
 			}			
 
