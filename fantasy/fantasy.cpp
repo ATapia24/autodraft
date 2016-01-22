@@ -20,42 +20,13 @@ double salary;
 double fppg;
 double fppd;
 bool injured;
+int lineupPos;
 };
 
 struct PlayerMatrix
 {
 	vector< vector<Player> > players;
 };
-
-class Lineup
-{
-	public:
-		Lineup(PlayerMatrix _matrix);
-		void print();
-	private:
-		PlayerMatrix matrix;
-		vector<Player> players;
-};
-
-Lineup::Lineup(PlayerMatrix _matrix)
-{
-	matrix = _matrix;
-	
-	for(int i=0; i<8; i++)
-	{
-		players[i] = matrix.players[i][0];
-	}
-}
-
-void Lineup::print()
-{
-	cout << "----------------------------------\n";
-	
-	for(int i=0; i<8; i++)
-	{
-		cout << players[i].position << ": " << players[i].name << '\n';
-	}	
-}
 
 //functions
 void downloadData();
@@ -69,7 +40,107 @@ void sortSalary(vector<Player>&, char);
 void rmLowFPPD(vector<Player>&);
 void genLineup(PlayerMatrix);
 void loadMatrix(vector<Player>, PlayerMatrix&);
+
+
+class Lineup
+{
+	public:
+		Lineup(PlayerMatrix _matrix);
+		vector<int> lowFPPG();
+		int salary();
+		double fppg();
+		void print();
+		void setPlayer(int, int);
+		vector<Player> getPlayers();
+	private:
+		PlayerMatrix matrix;
+		vector<Player> players;
+		vector<int> fppgOrder;
+};
+
+//CONSTRUCTOR
+//DESC. set lineup to first element in matrix for each slot
+Lineup::Lineup(PlayerMatrix _matrix)
+{
+	//set martx and players size
+	matrix = _matrix;
+	players.resize(8);
 	
+	//set lineup to first element int matrix
+	for(int i=0; i<8; i++)
+	{
+		players[i] = matrix.players[i][0];
+		players[i].lineupPos = i;
+	}
+}
+//GET PLAYER
+//DESC. return players vector
+vector<Player> Lineup::getPlayers()
+{
+	return players;
+}
+//LOW FPPG
+//DESC. return low fppg in lineup
+vector<int> Lineup::lowFPPG()
+{
+	fppgOrder.resize(8);	
+	vector<Player> temp = players;
+	
+	//sort by fppg ascending
+	sortFPPG(temp, 'a');
+                       
+	//set player pos order
+	for(int i=0; i<8; i++)
+	{
+		fppgOrder[i] = temp[i].lineupPos;
+	}
+	
+	return fppgOrder;
+}
+//FPPG
+//DESC. return fppg sum
+double Lineup::fppg()
+{
+	int sum=0;
+	for(int i=0; i<8; i++)
+	{
+		sum += players[i].fppg;
+	}
+	return sum;
+}
+//SALARY
+//DESC. return salary sum
+int Lineup::salary()
+{
+	int sum=0;
+	for(int i=0; i<8; i++)
+	{
+		sum += players[i].salary;
+	}
+	return sum;
+}
+//PRINT
+//DESC. print lineup
+void Lineup::print()
+{
+	cout << "----------------------------------\n";
+	
+	for(int i=0; i<8; i++)
+	{
+		if(i==5){cout<<"Reserve - \n";}
+		cout << players[i].position << ": " << players[i].name << " : " << players[i].fppg << endl;
+	}
+	cout << "Salary : " << salary() << endl; 
+	cout << "FPPG   : " << fppg() << endl;
+}
+
+//SET PLAYER
+//DESC. set player in lineup
+void Lineup::setPlayer(int pos, int index)
+{
+	players[pos] = matrix.players[pos][index];
+}
+
 int main(int argc, char *argv[]){
 
 	cout << "Auto Drafter: Beta" << endl;	
@@ -96,12 +167,36 @@ int main(int argc, char *argv[]){
 void genLineup(PlayerMatrix matrix)
 {
 	Lineup lineup(matrix);
-	lineup.print();	
+	
+	//player pos index
+	vector<int> index;
+	index.resize(8);
+
+	vector<int> fppgOrder;
+	fppgOrder.resize(8);
+
+	int orderIndex = 0;
+
+	for(int i=0; i<8; i++)
+	{
+		index[i] = 0;
+	}
+
+	while(lineup.salary()<=200)
+	{
+		fppgOrder = lineup.lowFPPG();
+		index[fppgOrder[orderIndex]]++;
+		lineup.setPlayer(fppgOrder[orderIndex],index[fppgOrder[orderIndex]]);
+		lineup.print();
+	}
+
+	lineup.print();
 }
 //LOAD MATRIX
 //DESC. LOAD PLAYERS INTO PLAYER MATRIX
 void loadMatrix(vector<Player> players, PlayerMatrix &matrix)
 {
+	//player vectors
 	vector<Player> PG;
 	vector<Player> SG;
 	vector<Player> SF;
@@ -112,6 +207,7 @@ void loadMatrix(vector<Player> players, PlayerMatrix &matrix)
 	vector<Player> UL;
 
 
+	//fill player vectors
 	getPosition(players, PG, "PG");	
 	getPosition(players, SG, "SG");	
 	getPosition(players, SF, "SF");	
@@ -121,20 +217,18 @@ void loadMatrix(vector<Player> players, PlayerMatrix &matrix)
 	getPosition(players, FD, "FD");	
 	UL = players;
 
-	//FIX******
-	matrix.players.reserve(8);
-	matrix.players[0].reserve(PG.size());
-	cout << "fsedf" << endl;
-	cout << matrix.players.size() << " : " << matrix.players[1].size() << endl;
-	matrix.players[1].reserve(SG.size());
-	cout << "2" << endl;
-	matrix.players[2].reserve(SF.size());
-	matrix.players[3].reserve(PF.size());
-	matrix.players[4].reserve(C.size());
-	matrix.players[5].reserve(GD.size());
-	matrix.players[6].reserve(FD.size());
-	matrix.players[7].reserve(UL.size());
+	//set matrix sizes
+	matrix.players.resize(8);
+	matrix.players[0].resize(PG.size());
+	matrix.players[1].resize(SG.size());
+	matrix.players[2].resize(SF.size());
+	matrix.players[3].resize(PF.size());
+	matrix.players[4].resize(C.size());
+	matrix.players[5].resize(GD.size());
+	matrix.players[6].resize(FD.size());
+	matrix.players[7].resize(UL.size());
 
+	//set matrix
 	matrix.players[0] = PG;
 	matrix.players[1] = SG;
 	matrix.players[2] = SF;
@@ -450,13 +544,17 @@ void downloadData()
 {
 	//get contest id
 	string contestLink, contestId;
-	cout << "Enter contest link: ";
+	cout << "Enter contest Link or Id: ";
 	cin >> contestLink;
-	contestId = contestLink.substr(46, 6);
+	if(contestLink.length() == 7)
+	{
+		contestId = contestLink;
+	}else{
+		contestId = contestLink.substr(46, 7);
+	}
 
-	cout << "Updating player data... \n";
-	
 	//download yahoo cvs file
+	cout << "Updating player data... \n";
 	string cvsLink = "wget https://dfyql-ro.sports.yahoo.com/v2/export/contestPlayers?contestId=" + contestId + " -q -O data/playerList.cvs";
 	system(cvsLink.c_str());
 }
