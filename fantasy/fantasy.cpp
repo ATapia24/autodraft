@@ -203,7 +203,7 @@ int main(int argc, char *argv[]){
 //DESC, GENERATE LINEUP
 void genLineup(PlayerMatrix matrix)
 {
-	Lineup lineup(matrix), optLineup(matrix);
+	Lineup lineup(matrix), highLineup(matrix);
 	
 	//player pos index
 	vector<int> index;
@@ -233,8 +233,6 @@ void genLineup(PlayerMatrix matrix)
 			index[(fppgOrder[orderIndex])]++;
 			
 			//set player
-			//index[orderIndex] += lineup.setPlayer(fppgOrder[orderIndex],index[(fppgOrder[orderIndex])]);
-
 			offset = lineup.setPlayer(fppgOrder[orderIndex],index[(fppgOrder[orderIndex])]);
 			
 			if(offset == -1)
@@ -246,7 +244,7 @@ void genLineup(PlayerMatrix matrix)
 			}	
 			if(lineup.salary()<=200)
 			{
-				lineup.print();
+				highLineup = lineup;
 			}
 
 		}
@@ -256,11 +254,15 @@ void genLineup(PlayerMatrix matrix)
 		if((orderIndex > 8)){maxed=1;}
 		
 	}
+
+	lineup = highLineup;
+
+	
 }
 //LOAD MATRIX
 //DESC. LOAD PLAYERS INTO PLAYER MATRIX
 void loadMatrix(vector<Player> players, PlayerMatrix &matrix)
-{
+{   
 	//player vectors
 	vector<Player> PG;
 	vector<Player> SG;
