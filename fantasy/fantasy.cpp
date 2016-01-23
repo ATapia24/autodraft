@@ -23,6 +23,11 @@ bool injured;
 int lineupPos;
 };
 
+struct Team{
+string name;
+double oppg;
+};
+
 struct PlayerMatrix
 {
 	vector< vector<Player> > players;
@@ -31,6 +36,8 @@ struct PlayerMatrix
 
 //functions
 void downloadData();
+void downloadAdjustData();
+void parseTeamData(vector<Team>&);
 void loadPlayers(vector<Player>&);
 void printPlayer(Player);
 void printPlayers(vector<Player>);
@@ -184,20 +191,100 @@ int main(int argc, char *argv[]){
 	cout << "Auto Drafter: Beta" << endl;	
 	
 	//update data
+	if(argc >= 1){
+		//downloadData();
+	}
 	if(argc >= 2){
-		downloadData();
+		//downloadAdjustData();
 	}
 	
+	//players	
 	vector<Player> players;
 	PlayerMatrix matrix;
 	
+	//teams
+	vector<Team> teams(30);
+	parseTeamData(teams);
+
 	//load players and matrix
-	loadPlayers(players);
-	loadMatrix(players, matrix);
+	//loadPlayers(players);
+	//loadMatrix(players, matrix);
 	
 	//generate lineup
-	genLineup(matrix);
+	//genLineup(matrix);
 		
+}
+
+//PARSE TEAM DATA
+//DESC. parse team data into teams vector
+void parseTeamData(vector<Team> &teams)
+{
+	ifstream file;
+	string line;
+	file.open("data/teamDef.html");
+	bool startFlag=0;
+	int lineCount=1;
+
+	
+	int teamIndex=0;
+	int offset = 10;
+	int teamNameOffset=2;
+	int teamOPPGOffset=3;
+
+	while(getline(file, line))
+	{
+		if((line.find(">1</td>") !=string::npos) && !startFlag)
+		{
+			startFlag = 1;
+		}
+		else if(startFlag && (lineCount < 300))
+		{
+			lineCount++;
+
+			//TEAM NAME
+			if(lineCount == teamNameOffset)
+			{
+				//add offset
+				teamNameOffset += offset;
+				
+				string name;
+				int endPos;
+				
+				//parse team name form line
+				name = line.substr(44, 15);
+				endPos = name.find('\"');
+				name = name.substr(0, endPos);
+				
+				teams[teamIndex].name = name;
+			}
+
+			//OPPG
+			if(lineCount == teamOPPGOffset)
+			{
+				teamOPPGOffset += offset;
+
+				string oppg;
+				int endPos;
+				
+				//parse team oppg from line
+				oppg = line.substr(38, 10);
+				endPos = oppg.find('\"');
+				oppg = oppg.substr(0, endPos);
+				
+				//set oppg change string to c string then double using atof 
+				teams[teamIndex].oppg = atof(oppg.c_str());
+			}
+			
+			//++team index
+			if(lineCount % offset == 0)
+			{
+				teamIndex++;
+			}
+		}
+	}
+	
+	file.close();
+	
 }
 
 //GENERATE LINEUP
@@ -622,6 +709,8 @@ void loadPlayers(vector<Player> &playerVector)
 
 }
 
+//DOWNLOAD DATA
+//DESC. download contest data
 void downloadData()
 {
 	//get contest id
@@ -636,8 +725,23 @@ void downloadData()
 	}
 
 	//download yahoo cvs file
-	cout << "Updating player data... \n";
+	cout << "Updating player data...\n";
 	string cvsLink = "wget https://dfyql-ro.sports.yahoo.com/v2/export/contestPlayers?contestId=" + contestId + " -q -O data/playerList.cvs";
 	system(cvsLink.c_str());
 }
+
+//DOWNLOAD ADJUST DATA
+//DESC. download adjust player data
+void downloadAdjustData()
+{
+	cout << "Updating team defensive data...\n";
+	system("wget https://www.teamrankings.com/nba/stat/opponent-points-per-game -q -O data/teamDef.html");
+}
+
+
+
+
+
+
+
 
