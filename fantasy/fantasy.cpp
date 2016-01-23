@@ -26,6 +26,7 @@ int lineupPos;
 struct PlayerMatrix
 {
 	vector< vector<Player> > players;
+	vector<string> position;
 };
 
 //functions
@@ -134,10 +135,11 @@ void Lineup::print()
 	for(int i=0; i<8; i++)
 	{
 		if(i==5){cout<<"Reserve - \n";}
-		cout << players[i].position << ": " << players[i].name << " : " << players[i].fppg << endl;
+		cout << matrix.position[i] << ": " << players[i].name << " : " << players[i].fppg << endl;
 	}
-	cout << "Salary : " << salary() << endl; 
-	cout << "FPPG   : " << fppg() << endl;
+	cout << "Salary   : " << salary() << endl; 
+	cout << "FPPG     : " << fppg() << endl;
+	cout << "AVG FPPG : " << (fppg()/8) << endl;
 }
 
 //SET PLAYER
@@ -157,7 +159,7 @@ int Lineup::setPlayer(int pos, int index)
 			{
 				return -1;	
 			}
-			cout << matrix.players[pos].size() << ":" << (index + offset) << endl;
+
 			if(players[i].name == matrix.players[pos][index + offset].name)
 			{
 					flag=1;
@@ -302,6 +304,16 @@ void loadMatrix(vector<Player> players, PlayerMatrix &matrix)
 	matrix.players[5] = GD;
 	matrix.players[6] = FD;
 	matrix.players[7] = UL;
+
+	matrix.position.resize(8);
+	matrix.position[0] = "PG";
+	matrix.position[1] = "SG";
+	matrix.position[2] = "SF";
+	matrix.position[3] = "PF";
+	matrix.position[4] = "C";
+	matrix.position[5] = "GD";
+	matrix.position[6] = "FD";
+	matrix.position[7] = "UL";
 
 	for(int i=0; i<8; i++)
 	{
