@@ -153,11 +153,11 @@ int Lineup::setPlayer(int pos, int index)
 	
 		for(int i=0; i<8; i++)
 		{
-			if(matrix.players[pos].size() < (index+offset))
+			if(matrix.players[pos].size() < (index+offset)+1)
 			{
 				return -1;	
 			}
-
+			cout << matrix.players[pos].size() << ":" << (index + offset) << endl;
 			if(players[i].name == matrix.players[pos][index + offset].name)
 			{
 					flag=1;
@@ -171,7 +171,6 @@ int Lineup::setPlayer(int pos, int index)
 		}	
 	}
 	
-	cout << players[pos].name << " -> " << matrix.players[pos][index + offset].name << endl;
 	players[pos] = matrix.players[pos][index + offset];
 	players[pos].lineupPos = pos;
 	
@@ -189,11 +188,11 @@ int main(int argc, char *argv[]){
 	
 	vector<Player> players;
 	PlayerMatrix matrix;
-
+	
 	//load players and matrix
 	loadPlayers(players);
 	loadMatrix(players, matrix);
-
+	
 	//generate lineup
 	genLineup(matrix);
 		
@@ -228,7 +227,7 @@ void genLineup(PlayerMatrix matrix)
 		{
 			//update fppg list order
 			fppgOrder = lineup.lowFPPG();
-
+			
 			//++index for current orderindex
 			index[(fppgOrder[orderIndex])]++;
 			
@@ -246,7 +245,6 @@ void genLineup(PlayerMatrix matrix)
 			{
 				highLineup = lineup;
 			}
-
 		}
 			
 		posMaxed = 0;
@@ -256,7 +254,7 @@ void genLineup(PlayerMatrix matrix)
 	}
 
 	lineup = highLineup;
-
+	lineup.print();
 	
 }
 //LOAD MATRIX
