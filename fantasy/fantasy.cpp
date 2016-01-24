@@ -18,6 +18,7 @@ string game;
 string time;
 double salary;
 double fppg;
+double aFppg;
 double fppd;
 bool injured;
 int lineupPos;
@@ -25,6 +26,8 @@ int lineupPos;
 
 struct Team{
 string name;
+string nameAbbr;
+string city;
 double oppg;
 };
 
@@ -37,7 +40,8 @@ struct PlayerMatrix
 //functions
 void downloadData();
 void downloadAdjustData();
-void parseTeamData(vector<Team>&);
+void loadTeams(vector<Team>&);
+void parseTeamOppgData(vector<Team>&);
 void loadPlayers(vector<Player>&);
 void printPlayer(Player);
 void printPlayers(vector<Player>);
@@ -191,11 +195,11 @@ int main(int argc, char *argv[]){
 	cout << "Auto Drafter: Beta" << endl;	
 	
 	//update data
-	if(argc >= 1){
-		//downloadData();
-	}
 	if(argc >= 2){
-		//downloadAdjustData();
+		downloadData();
+	}
+	if(argc >= 3){
+		downloadAdjustData();
 	}
 	
 	//players	
@@ -204,20 +208,20 @@ int main(int argc, char *argv[]){
 	
 	//teams
 	vector<Team> teams(30);
-	parseTeamData(teams);
-
+	//parseTeamOppgData(teams);
+	
 	//load players and matrix
-	//loadPlayers(players);
-	//loadMatrix(players, matrix);
+	loadPlayers(players);
+	loadMatrix(players, matrix);
 	
 	//generate lineup
-	//genLineup(matrix);
+	genLineup(matrix);
 		
 }
 
 //PARSE TEAM DATA
 //DESC. parse team data into teams vector
-void parseTeamData(vector<Team> &teams)
+void parseTeamOppgData(vector<Team> &teams)
 {
 	ifstream file;
 	string line;
@@ -692,10 +696,11 @@ void loadPlayers(vector<Player> &playerVector)
 
 			//CALC FPPD
 			tempPlayer.fppd = tempPlayer.fppg / tempPlayer.salary;
-			
 
 			//add to vector
-			if(!tempPlayer.injured){playerVector.push_back(tempPlayer);}
+			if(!tempPlayer.injured && tempPlayer.team != "BOS" && tempPlayer.team != "PHI"){
+				playerVector.push_back(tempPlayer);
+			}
 			
 			}			
 
