@@ -184,7 +184,6 @@ int Lineup::setPlayer(int pos, int index)
 		}	
 	}
 	
-	cout << players[pos].name << " -> " << matrix.players[pos][index+offset].name << endl;
 	players[pos] = matrix.players[pos][index + offset];
 	players[pos].lineupPos = pos;
 	
@@ -424,8 +423,6 @@ void loadMatrix(vector<Player> players, PlayerMatrix &matrix)
 		rmLowFPPD(matrix.players[i]);
 	}
 
-	//printPlayers(matrix.players[5]);
-	printPlayers(GD);
 }
 
 //REMOVE LOW FPPD
