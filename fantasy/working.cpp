@@ -184,6 +184,7 @@ int Lineup::setPlayer(int pos, int index)
 		}	
 	}
 	
+	cout << players[pos].name << " -> " << matrix.players[pos][index+offset].name << endl;
 	players[pos] = matrix.players[pos][index + offset];
 	players[pos].lineupPos = pos;
 	
@@ -297,17 +298,19 @@ void genLineup(PlayerMatrix matrix)
 {
 	Lineup lineup(matrix), highLineup(matrix);
 	
+	int size = 8;
+
 	//player pos index
 	vector<int> index;
-	index.resize(8);
+	index.resize(size);
 
 	vector<int> fppgOrder;
-	fppgOrder.resize(8);
+	fppgOrder.resize(size);
 
 	int orderIndex = 0;
 	int offset=0;
 
-	for(int i=0; i<8; i++)
+	for(int i=0; i<size; i++)
 	{
 		index[i] = 0;
 	}
@@ -333,16 +336,25 @@ void genLineup(PlayerMatrix matrix)
 			}else
 			{
 				index[orderIndex] += offset;
-			}	
+			}
+				
 			if(lineup.salary()<=200)
 			{
 				highLineup = lineup;
 			}
+			/*else
+			{
+				index[orderIndex] -= offset;
+			}*/
 		}
 			
 		posMaxed = 0;
 		orderIndex++;
-		if((orderIndex > 8)){maxed=1;}
+		
+		if(orderIndex > size)
+		{
+			maxed=1;
+		}
 		
 	}
 
@@ -396,6 +408,7 @@ void loadMatrix(vector<Player> players, PlayerMatrix &matrix)
 	matrix.players[6] = FD;
 	matrix.players[7] = UL;
 
+
 	matrix.position.resize(8);
 	matrix.position[0] = "PG";
 	matrix.position[1] = "SG";
@@ -410,6 +423,9 @@ void loadMatrix(vector<Player> players, PlayerMatrix &matrix)
 	{
 		rmLowFPPD(matrix.players[i]);
 	}
+
+	//printPlayers(matrix.players[5]);
+	printPlayers(GD);
 }
 
 //REMOVE LOW FPPD
@@ -418,7 +434,7 @@ void rmLowFPPD(vector<Player> &players)
 {
 	//sort by fppd decsending
 	sortFPPD(players, 'd');
-
+	//sortSalary(players, 'a');
 	for(int i=0; i<players.size(); i++)
 	{
 		//dont check cuurent player in index j=i+1
@@ -698,7 +714,7 @@ void loadPlayers(vector<Player> &playerVector)
 			tempPlayer.fppd = tempPlayer.fppg / tempPlayer.salary;
 
 			//add to vector
-			if(!tempPlayer.injured && tempPlayer.team != "BOS" && tempPlayer.team != "PHI"){
+			if(!tempPlayer.injured){
 				playerVector.push_back(tempPlayer);
 			}
 			
