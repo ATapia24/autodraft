@@ -300,11 +300,9 @@ void genLineup(PlayerMatrix matrix)
 	int size = 8;
 
 	//player pos index
-	vector<int> index;
-	index.resize(size);
+	vector<int> index(size);
 
-	vector<int> fppgOrder;
-	fppgOrder.resize(size);
+	vector<int> fppgOrder(size);
 
 	int orderIndex = 0;
 	int offset=0;
@@ -316,9 +314,11 @@ void genLineup(PlayerMatrix matrix)
 	
 	bool maxed = 0;
 	bool posMaxed = 0;
+	int maxSalary = 200;
+
 	while(!maxed)
 	{
-		while((lineup.salary()<=200) && !posMaxed)
+		while((lineup.salary()<=maxSalary) && !posMaxed)
 		{
 			//update fppg list order
 			fppgOrder = lineup.lowFPPG();
@@ -337,14 +337,10 @@ void genLineup(PlayerMatrix matrix)
 				index[orderIndex] += offset;
 			}
 				
-			if(lineup.salary()<=200)
+			if(lineup.salary()<=maxSalary)
 			{
 				highLineup = lineup;
 			}
-			/*else
-			{
-				index[orderIndex] -= offset;
-			}*/
 		}
 			
 		posMaxed = 0;
@@ -357,8 +353,7 @@ void genLineup(PlayerMatrix matrix)
 		
 	}
 
-	lineup = highLineup;
-	lineup.print();
+	highLineup.print();
 	
 }
 //LOAD MATRIX
@@ -422,7 +417,6 @@ void loadMatrix(vector<Player> players, PlayerMatrix &matrix)
 	{
 		rmLowFPPD(matrix.players[i]);
 	}
-
 }
 
 //REMOVE LOW FPPD
