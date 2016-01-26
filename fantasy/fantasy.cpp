@@ -58,7 +58,7 @@ class Lineup
 {
 	public:
 		Lineup(PlayerMatrix _matrix);
-		vector<int> lowFPPG();
+		vector<int> lowFPPG(int, int);
 		int salary();
 		double fppg();
 		void print();
@@ -78,7 +78,8 @@ Lineup::Lineup(PlayerMatrix _matrix)
 	temp.id = 0;
 	temp.name = "Temp Player";
 	temp.fppg = 0;
-	temp.fppd = 0;	
+	temp.fppd = 0;
+	temp.position = "N/A";	
 	//set martx and players size
 	matrix = _matrix;
 	players.resize(8);
@@ -100,16 +101,34 @@ vector<Player> Lineup::getPlayers()
 }
 //LOW FPPG
 //DESC. return low fppg in lineup
-vector<int> Lineup::lowFPPG()
-{	vector<int> fppgOrder;
-	fppgOrder.resize(8);
-	vector<Player> temp = players;
+vector<int> Lineup::lowFPPG(int start, int end)
+{	
+	//get size of range
+	int size = end - start;
+	
+	//adjust size and end for when start==0
+	if(!start)
+	{
+		size++;
+		end++;
+	}
+	
+	//vectors
+	vector<int> fppgOrder(size);
+	vector<Player> temp;
+
+	//get players from range start-end
+	for(int i=start; i<end; i++)
+	{
+		temp.push_back(players[i]);
+	}
 	
 	//sort by fppg ascending
 	sortFPPG(temp, 'a');
         
+
 	//set player pos order
-	for(int i=0; i<8; i++)
+	for(int i=start; i<end; i++)
 	{
 		fppgOrder[i] = temp[i].lineupPos;
 	}
@@ -298,63 +317,75 @@ void genLineup(PlayerMatrix matrix)
 	Lineup lineup(matrix), highLineup(matrix);
 	
 	int size = 8;
+	int start=0;
+	int end=7;
 
 	//player pos index
 	vector<int> index(size);
-
-	vector<int> fppgOrder(size);
-
-	int orderIndex = 0;
-	int offset=0;
-
-	for(int i=0; i<size; i++)
-	{
-		index[i] = 0;
-	}
 	
-	bool maxed = 0;
-	bool posMaxed = 0;
-	int maxSalary = 200;
+	vector<int> fppgOrder(size), lastOrder(size);
+	int positionIndex = 0;
+	int currentPosition = 0;
+	int positionOffset;
+	int currentPos = 0;
+	int salary = 200;
+	bool posMaxed=0, lineupMaxed=0;
+	//#############################################3
+	//FIX SHOULD GET 27.54 ON 1021696
+	//GEN START LINEUP -> GD,FD -> UL
+	int  count =0;
+	while(!lineupMaxed && count < 500)
+	{	
+		//get fppg ordered vector for spots 0-4
+		fppgOrder = lineup.lowFPPG(start,end);
 
-	while(!maxed)
-	{
-		while((lineup.salary()<=maxSalary) && !posMaxed)
+		if(lastOrder != fppgOrder)
 		{
-			//update fppg list order
-			fppgOrder = lineup.lowFPPG();
-			
-			//++index for current orderindex
-			index[(fppgOrder[orderIndex])]++;
-			
-			//set player
-			offset = lineup.setPlayer(fppgOrder[orderIndex],index[(fppgOrder[orderIndex])]);
-			
-			if(offset == -1)
-			{
-				posMaxed = 1;
-			}else
-			{
-				index[orderIndex] += offset;
-			}
-				
-			if(lineup.salary()<=maxSalary)
-			{
-				highLineup = lineup;
-			}
+			currentPos=0;
+			lastOrder=fppgOrder;
+		}
+
+		//set player fppg[currentPos] = position, positionIndex = index of position list
+		positionOffset = lineup.setPlayer(fppgOrder[currentPos], positionIndex);
+		
+		//if at the end of current lisy set pos maxed
+		if(positionOffset == -1){
+			posMaxed=1;
+		}
+
+		//if there is an overshoot revert change and set pos maxed
+		if(lineup.salary() > salary){
+			posMaxed=1;
+			lineup.setPlayer(fppgOrder[currentPos], positionIndex-1);
 		}
 			
-		posMaxed = 0;
-		orderIndex++;
-		
-		if(orderIndex > size)
-		{
-			maxed=1;
+		if(!posMaxed){
+			//go on to next player in same list
+			positionIndex += positionOffset;
+		}else{
+			currentPos++;	
+		}
+
+		//set lineup to maxed pos goes past size
+		if(currentPos>(size-1)){
+			lineupMaxed=1;	
 		}
 		
+
+		//set lineup if valid
+		if( (lineup.salary() <= salary) && (lineup.fppg() > highLineup.fppg()) )
+		{
+			highLineup = lineup;
+		}
+
+		count++;
 	}
 
+	cout << "salary   : " << lineup.salary() << endl;
+	cout << "maxed    : " << lineupMaxed << endl;
+	
 	highLineup.print();
-	
+		
 }
 //LOAD MATRIX
 //DESC. LOAD PLAYERS INTO PLAYER MATRIX
