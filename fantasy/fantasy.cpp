@@ -18,6 +18,7 @@ string game;
 string time;
 double salary;
 double fppg;
+double realFppg;
 double aFppg;
 double fppd;
 bool injured;
@@ -26,9 +27,12 @@ int lineupPos;
 
 struct Team{
 string name;
-string nameAbbr;
+string abbr;
 string city;
 double oppg;
+double oppgAdjust;
+double defEf;
+double defEfAdjust;
 };
 
 struct PlayerMatrix
@@ -40,8 +44,10 @@ struct PlayerMatrix
 //functions
 void downloadData();
 void downloadAdjustData();
+void teamInit(vector<Team>&);
 void loadTeams(vector<Team>&);
 void parseTeamOppgData(vector<Team>&);
+void parseTeamDefEfData(vector<Team>&);
 void loadPlayers(vector<Player>&);
 void printPlayer(Player);
 void printPlayers(vector<Player>);
@@ -52,7 +58,7 @@ void sortSalary(vector<Player>&, char);
 void rmLowFPPD(vector<Player>&);
 void genLineup(PlayerMatrix);
 void loadMatrix(vector<Player>, PlayerMatrix&);
-
+void adjustPlayers(vector<Player>&, vector<Team>);
 
 class Lineup
 {
@@ -61,6 +67,7 @@ class Lineup
 		vector<int> lowFPPG(int, int);
 		int salary();
 		double fppg();
+		double fppgReal();
 		void print();
 		int setPlayer(int, int);
 		vector<Player> getPlayers();
@@ -145,6 +152,19 @@ double Lineup::fppg()
 	}
 	return sum;
 }
+
+//FPPG REAL
+//DESC. return real fppg sum
+double Lineup::fppgReal()
+{
+	int sum=0;
+	for(int i=0; i<8; i++)
+	{
+		sum += players[i].realFppg;
+	}
+	return sum;
+}
+
 //SALARY
 //DESC. return salary sum
 int Lineup::salary()
@@ -160,16 +180,26 @@ int Lineup::salary()
 //DESC. print lineup
 void Lineup::print()
 {
-	cout << "----------------------------------\n";
 	
+	cout << "----------------------------------\n";
 	for(int i=0; i<8; i++)
 	{
 		if(i==5){cout<<"Reserve - \n";}
 		cout << matrix.position[i] << ": " << players[i].name << " : " << players[i].fppg << endl;
 	}
-	cout << "Salary   : " << salary() << endl; 
+	
+	cout << "----------------------------------\n";
+	cout << "Salary   : " << salary() << endl;
+
+	cout << "----------------------------------\n";
+	cout << "Adjusted FPPG" << endl;
 	cout << "FPPG     : " << fppg() << endl;
-	cout << "AVG FPPG : " << (fppg()/8) << endl;
+	cout << "AVG FPPG : " << (fppg()/8)<< endl;
+	
+	cout << "----------------------------------\n";
+	cout << "True FPPG" << endl;
+	cout << "FPPG     : " << fppgReal() << endl;
+	cout << "AVG FPPG : " << (fppgReal()/8) << endl;
 }
 
 //SET PLAYER
@@ -218,24 +248,45 @@ int main(int argc, char *argv[]){
 		downloadData();
 	}
 	if(argc >= 3){
-		downloadAdjustData();
+		//downloadAdjustData();
 	}
-	
+
 	//players	
 	vector<Player> players;
 	PlayerMatrix matrix;
 	
 	//teams
 	vector<Team> teams(30);
-	//parseTeamOppgData(teams);
-	
+	teamInit(teams);
+	parseTeamOppgData(teams);
+	parseTeamDefEfData(teams);
+
 	//load players and matrix
 	loadPlayers(players);
+	adjustPlayers(players, teams);
 	loadMatrix(players, matrix);
-	
+
 	//generate lineup
 	genLineup(matrix);
-		
+}
+
+//ADJUST PLAYERS
+//DESC. adjust player stats based on opponent
+void adjustPlayers(vector<Player> &players, vector<Team> teams)
+{
+	for(int i=0; i<players.size(); i++)
+	{
+		for(int j=0; j<teams.size(); j++)
+		{
+			if(players[i].opponent == teams[j].abbr)
+			{
+				players[i].fppg += teams[j].oppgAdjust;
+				players[i].fppg += teams[j].defEfAdjust;
+				j = teams.size()-1;
+			}
+		}
+	}
+
 }
 
 //PARSE TEAM DATA
@@ -248,7 +299,7 @@ void parseTeamOppgData(vector<Team> &teams)
 	bool startFlag=0;
 	int lineCount=1;
 
-	
+	vector<Team> temp(30);
 	int teamIndex=0;
 	int offset = 10;
 	int teamNameOffset=2;
@@ -264,21 +315,27 @@ void parseTeamOppgData(vector<Team> &teams)
 		{
 			lineCount++;
 
-			//TEAM NAME
+			//TEAM CITY
 			if(lineCount == teamNameOffset)
 			{
 				//add offset
 				teamNameOffset += offset;
 				
-				string name;
+				string city;
 				int endPos;
 				
 				//parse team name form line
-				name = line.substr(44, 15);
-				endPos = name.find('\"');
-				name = name.substr(0, endPos);
+				city = line.substr(44, 15);
+				endPos = city.find('\"');
+				city = city.substr(0, endPos);
 				
-				teams[teamIndex].name = name;
+				//FORMATING EXCEPTIONS
+				if(city == "Okla City")
+				{
+					city = "Oklahoma City";
+				}
+				
+				temp[teamIndex].city = city;
 			}
 
 			//OPPG
@@ -295,7 +352,7 @@ void parseTeamOppgData(vector<Team> &teams)
 				oppg = oppg.substr(0, endPos);
 				
 				//set oppg change string to c string then double using atof 
-				teams[teamIndex].oppg = atof(oppg.c_str());
+				temp[teamIndex].oppg = atof(oppg.c_str());
 			}
 			
 			//++team index
@@ -307,7 +364,131 @@ void parseTeamOppgData(vector<Team> &teams)
 	}
 	
 	file.close();
+
+	//set data
+	for(int i=0; i<temp.size(); i++)
+	{
+		for(int j=0; j<teams.size(); j++)
+		{
+			if(teams[j].city == temp[i].city)
+			{
+				teams[j].oppg = temp[i].oppg;
+			}
+		}
+	}
+
+	//calc multiplier
+	double avgOppg=0;
+	for(int i=0; i<teams.size(); i++)
+	{
+		avgOppg += teams[i].oppg;
+	}
+	avgOppg = avgOppg/30;
+	for(int i=0; i<teams.size(); i++)
+	{
+		teams[i].oppgAdjust = (teams[i].oppg-avgOppg)/2;
+	}
+}
+
+//PARSE TEAM DATA
+//DESC. parse team data into teams vector
+void parseTeamDefEfData(vector<Team> &teams)
+{
+	ifstream file;
+	string line;
+	file.open("data/teamDefEf.html");
+	bool startFlag=0;
+	int lineCount=1;
+
+	vector<Team> temp(30);
+	int teamIndex=0;
+	int offset = 10;
+	int teamNameOffset=2;
+	int teamDEFEFOffset=3;
+
+	while(getline(file, line))
+	{
+		if((line.find(">1</td>") !=string::npos) && !startFlag)
+		{
+			startFlag = 1;
+		}
+		else if(startFlag && (lineCount < 300))
+		{
+			lineCount++;
+
+			//TEAM CITY
+			if(lineCount == teamNameOffset)
+			{
+				//add offset
+				teamNameOffset += offset;
+				
+				string city;
+				int endPos;
+				
+				//parse team name form line
+				city = line.substr(44, 15);
+				endPos = city.find('\"');
+				city = city.substr(0, endPos);
+				
+				//FORMATING EXCEPTIONS
+				if(city == "Okla City")
+				{
+					city = "Oklahoma City";
+				}
+				
+				temp[teamIndex].city = city;
+			}
+
+			//OPPG
+			if(lineCount == teamDEFEFOffset)
+			{
+				teamDEFEFOffset += offset;
+
+				string defEf;
+				int endPos;
+				
+				//parse team oppg from line
+				defEf = line.substr(38, 10);
+				endPos = defEf.find('\"');
+				defEf= defEf.substr(0, endPos);
+				
+				//set oppg change string to c string then double using atof 
+				temp[teamIndex].defEf = atof(defEf.c_str());
+			}
+			
+			//++team index
+			if(lineCount % offset == 0)
+			{
+				teamIndex++;
+			}
+		}
+	}
 	
+	file.close();
+
+	//set data
+	for(int i=0; i<temp.size(); i++)
+	{
+		for(int j=0; j<teams.size(); j++)
+		{
+			if(teams[j].city == temp[i].city)
+			{
+				teams[j].defEf = temp[i].defEf;
+			}
+		}
+	}
+
+	//calc multiplier
+	double avgDefEf=0;
+	for(int i=0; i<teams.size(); i++)
+	{
+		avgDefEf += teams[i].defEf;
+	}
+	avgDefEf = avgDefEf/30;
+	for(int i=0; i<teams.size(); i++)
+	{
+		teams[i].defEfAdjust = (teams[i].defEf-avgDefEf) * 100;
+	}
 }
 
 //GENERATE LINEUP
@@ -377,10 +558,6 @@ void genLineup(PlayerMatrix matrix)
 
 		count++;
 	}
-
-	cout << "count    : " << count << endl;
-	cout << "salary   : " << lineup.salary() << endl;
-	cout << "maxed    : " << lineupMaxed << endl << endl;
 	
 	highLineup.print();
 		
@@ -713,7 +890,9 @@ void loadPlayers(vector<Player> &playerVector)
                         endPos = line.find_first_of(token);
 
                         tempPlayer.fppg = atof(line.substr(startPos + 1, endPos - startPos - 1).c_str());
-
+			
+			//REAL FPPG
+			tempPlayer.realFppg = tempPlayer.fppg;
 
 			//INJURY STATUS
 			startPos = line.find_first_of(token);
@@ -777,6 +956,132 @@ void downloadAdjustData()
 {
 	cout << "Updating team defensive data...\n";
 	system("wget https://www.teamrankings.com/nba/stat/opponent-points-per-game -q -O data/teamDef.html");
+	system("wget https://www.teamrankings.com/nba/stat/defensive-efficiency -q -O data/teamDefEf.html");
+}
+
+//TEAM INIT
+//DESC. intitialize teams
+void teamInit(vector<Team> &teams)
+{
+	teams[0].name = "Hawks";
+	teams[0].abbr = "ATL";
+	teams[0].city = "Atlanta";
+
+	teams[1].name = "Nets";
+	teams[1].abbr = "BKN";
+	teams[1].city = "Brooklyn";
+
+	teams[2].name = "Celtics";
+	teams[2].abbr = "BOS";
+	teams[2].city = "Boston";
+
+	teams[3].name = "Hornets";
+	teams[3].abbr = "CHA";
+	teams[3].city = "Charlotte";
+
+	teams[4].name = "Bulls";
+	teams[4].abbr = "CHI";
+	teams[4].city = "Chicago";
+
+	teams[5].name = "Mavericks";
+	teams[5].abbr = "DAL";
+	teams[5].city = "Dallas";
+
+	teams[6].name = "Nuggets";
+	teams[6].abbr = "DEN";
+	teams[6].city = "Denver";
+
+	teams[7].name = "Pistons";
+	teams[7].abbr = "DET";
+	teams[7].city = "Detroit";
+
+	teams[8].name = "Warriors";
+	teams[8].abbr = "GS";
+	teams[8].city = "Golden State";
+
+	teams[9].name = "Rockets";
+	teams[9].abbr = "HOU";
+	teams[9].city = "Houston";
+
+	teams[10].name = "Pacers";
+	teams[10].abbr = "IND";
+	teams[10].city = "Indiana";
+
+	teams[11].name = "Clippers";
+	teams[11].abbr = "LAC";
+	teams[11].city = "LA Clippers";
+
+	teams[12].name = "Lakers";
+	teams[12].abbr = "LAL";
+	teams[12].city = "LA Lakers";
+
+	teams[13].name = "Grizzlies";
+	teams[13].abbr = "MEM";
+	teams[13].city = "Memphis";
+
+	teams[14].name = "Heat";
+	teams[14].abbr = "MIA";
+	teams[14].city = "Miami";
+
+	teams[15].name = "Pelicans";
+	teams[15].abbr = "NOP";
+	teams[15].city = "New Orleans";
+
+	teams[16].name = "Knicks";
+	teams[16].abbr = "NYK";
+	teams[16].city = "New York";
+
+	teams[17].name = "Thunder";
+	teams[17].abbr = "OKC";
+	teams[17].city = "Oklahoma City";
+
+	teams[18].name = "Magic";
+	teams[18].abbr = "ORL";
+	teams[18].city = "Orlando";
+
+	teams[19].name = "Suns";
+	teams[19].abbr = "PHO";
+	teams[19].city = "Phoenix";
+
+	teams[20].name = "Trail Blazers";
+	teams[20].abbr = "POR";
+	teams[20].city = "Portland";
+
+	teams[21].name = "Kings";
+	teams[21].abbr = "SAC";
+	teams[21].city = "Sacramento";
+
+	teams[22].name = "Spurs";
+	teams[22].abbr = "SA";
+	teams[22].city = "San Antonio";
+
+	teams[23].name = "Raptors";
+	teams[23].abbr = "TOR";
+	teams[23].city = "Toronto";
+
+	teams[24].name = "Jazz";
+	teams[24].abbr = "UTA";
+	teams[24].city = "Utah";
+
+	teams[25].name = "Wizards";
+	teams[25].abbr = "WAS";
+	teams[25].city = "Washington";
+
+	teams[26].name = "Bucks";
+	teams[26].abbr = "MIL";
+	teams[26].city = "Milwaukee";
+
+	teams[27].name = "Timberwolves";
+	teams[27].abbr = "MIN";
+	teams[27].city = "Minnesota";
+
+	teams[28].name = "76ers";
+	teams[28].abbr = "PHI";
+	teams[28].city = "Philadelphia";
+
+	teams[29].name = "Cavaliers";
+	teams[29].abbr = "CLE";
+	teams[29].city = "Cleveland";
 }
 
 
